@@ -159,7 +159,8 @@ axes[-1].xaxis.set_major_formatter(mdates.DateFormatter("%m-%d"))
 axes[-1].set_xticks(xtick_loc)
 
 plt.tight_layout()
-plt.show()
+
+fig.savefig('figures/hourly_average.png', dpi=600)
 
 # Save the arrays
 np.save('data/hourly/temp.npy', hourly_temp)
@@ -170,3 +171,4 @@ np.save('data/hourly/press.npy', hourly_press)
 np.save('data/hourly/rain.npy', hourly_rain)
 np.save('data/hourly/wind.npy', hourly_wind)
 np.save('data/hourly/time.npy', tt_hourly)
+np.save('data/hourly/RH.npy', hourly_rh)
