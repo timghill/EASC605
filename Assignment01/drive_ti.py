@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 """
-Calibrate and run temperature-index melt model
+Calcualte SR 50 melt; calibrate and run temperature-index melt model
 """
 
 import datetime
