@@ -19,3 +19,8 @@ Clean scripts for:
  * Main: Drive EBM, calibrate and run TI model
  * Plotting: Make all the plots
     * Some modularization here, e.g. setting axes xticks, fonts, ...
+
+Clean python files:
+
+ * `clean_input_data.py`: Explore AWS data and correct for data jumps (e.g. in SR50 data) before we use it in melt modelling
+ * `hourly_daily_averages.py`

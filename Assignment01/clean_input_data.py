@@ -12,9 +12,6 @@ net radiation
  * RH: Corrects for one observation of RH = 0
 
 Saves corrected files at original temporal resolution to data/clean
-
-Calculates relevant hourly and daily averages, saving data to data/hourly
-and data/daily directories
 """
 
 import matplotlib
@@ -195,7 +192,7 @@ rad_corr_ind = corr_net_rad<-100
 corr_net_rad[rad_corr_ind] = 0
 
 print('Correcting for strongly negative net radiation:')
-print(times[rad_corr_ind])
+print(tt[rad_corr_ind])
 
 # Correct for negative net SW radiation
 SW_corr_ind = (SWin - SWout)<0
