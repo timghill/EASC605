@@ -26,7 +26,7 @@ SWin = np.load('data/clean/SWin.npy')
 SWout = np.load('data/clean/SWout.npy')
 Rnet = np.load('data/clean/net_rad.npy')
 wind = np.load('data/clean/wind_speed.npy')
-
+height = np.load('data/clean/SR50_height.npy')
 LWnet = Rnet - (SWin - SWout)
 
 # 30 min data
@@ -66,24 +66,25 @@ def average_5min_to_hourly(x):
     return x_avg
 
 def average_30min_to_hourly(x):
-    chuck_len = 2
+    chunk_len = 2
     n_obs = len(x)
     n_steps = int(n_obs/chunk_len)
-    # print(n_steps)
+
     x_avg = np.zeros(n_steps)
     for i in range(n_steps):
         x_avg[i] = np.nanmean(x[i*chunk_len:(i+1)*chunk_len])
 
     return x_avg
 
-def average_30min_off_ice(x):
+
+def sum_30min_off_ice(x):
     x = x[1:]
     n_obs = len(x)
     n_steps = int(n_obs/chunk_len)
     # print(n_steps)
     x_avg = np.zeros(n_steps)
     for i in range(n_steps):
-        x_avg[i] = np.nanmean(x[i*chunk_len:(i+1)*chunk_len])
+        x_avg[i] = np.nansum(x[i*chunk_len:(i+1)*chunk_len])
 
     n_obs_total = int(len(temp[2:])/int(60/5))
     x_avg_total = np.zeros(n_obs_total)
@@ -99,15 +100,11 @@ hourly_SWin = average_5min_to_hourly(SWin)
 hourly_SWout = average_5min_to_hourly(SWout)
 hourly_LWnet = average_5min_to_hourly(LWnet)
 hourly_press = average_30min_to_hourly(press)
-hourly_rain = average_30min_off_ice(rain)
+hourly_rain = sum_30min_off_ice(rain)
 hourly_wind = average_5min_to_hourly(wind)
+hourly_height = average_30min_to_hourly(height)
 
-# print(hourly_rain.shape)
-# print(hourly_temp.shape)
-
-average_30min_off_ice(rain)
-
-fig, axes = plt.subplots(nrows=7, figsize=(8, 10), sharex=True)
+fig, axes = plt.subplots(nrows=7, figsize=(8, 8), sharex=True)
 # ax.plot(tt, temp)
 
 ax1, ax2, ax3, ax4, ax5, ax6, ax7 = axes
@@ -144,7 +141,7 @@ ax5.grid()
 ax5.text(0.015, 0.8, 'e', transform=ax5.transAxes)
 
 ax6.plot(tt_hourly, hourly_press)
-ax6.set_ylabel('P (Pa)')
+ax6.set_ylabel('P (hPa)')
 ax6.grid()
 ax6.text(0.015, 0.8, 'f', transform=ax6.transAxes)
 
@@ -172,3 +169,4 @@ np.save('data/hourly/rain.npy', hourly_rain)
 np.save('data/hourly/wind.npy', hourly_wind)
 np.save('data/hourly/time.npy', tt_hourly)
 np.save('data/hourly/RH.npy', hourly_rh)
+np.save('data/hourly/height.npy', hourly_height)

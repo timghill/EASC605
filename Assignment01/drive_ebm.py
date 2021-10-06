@@ -30,7 +30,7 @@ for i in range(len(comp_order)):
     axes[i].plot(time, getattr(energy_balance, comp_order[i]))
     axes[i].set_ylabel(comp_order[i] + ' (W/m$^2$)')
     axes[i].grid()
-    axes[i].text(0.015, 0.9, alphabet[i], transform=axes[i].transAxes)
+    axes[i].text(0.015, 0.85, alphabet[i], transform=axes[i].transAxes)
 
 axes[-1].set_xlabel('Date')
 axes[-1].xaxis.set_major_formatter(mdates.DateFormatter("%m-%d"))
@@ -39,7 +39,7 @@ max_month = 9
 xtick_loc = [datetime.datetime(2008, mm, 1) for mm in range(min_month, max_month+1)]
 axes[-1].set_xticks(xtick_loc)
 plt.tight_layout()
-fig.savefig('energy_balance_partitioning.png', dpi=600)
+fig.savefig('figures/energy_balance_partitioning.png', dpi=600)
 
 # Calculate total melt
 dt = 3600
@@ -70,5 +70,14 @@ print('Qrain:\t', frac_Qrain)
 
 print('\nTotal melt (m w.e.):')
 print(tot_Qmelt/rhow/L_f)
+
+melt = np.zeros(time.shape)
+
+for i in range(1, len(melt)):
+    melt[i] = melt[i-1] + energy_balance.Qmelt[i-1]*dt/rhow/L_f
+np.save('data/hourly/ebm_melt.npy', melt)
+
+fig, ax = plt.subplots()
+ax.plot(time, melt)
 
 plt.show()
