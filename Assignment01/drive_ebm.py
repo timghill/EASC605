@@ -1,3 +1,12 @@
+"""
+Calculate energy balance and corresponding melt timeseries from
+hourly-averaged data.
+
+Uses functions in EBM.py module to calculate hourly energy balance, and
+converts this to melt (units of m w.e.). Saves the melt timeseries as
+data/hourly/ebm_melt.npy.
+"""
+
 import datetime
 
 import numpy as np

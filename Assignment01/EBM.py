@@ -25,23 +25,22 @@ z_0E = 0.24e-3
 T_s = 0
 z = 2
 
+# Number of seconds per hour
 _hour = 3600
-_mm_2_m = 1e-3
 
-#
-# def objective(T, u, Q_H, L):
-#     u_fric = k*u/(np.log(z/z_0) - stab_M(z/L))
-#     L_star = mon_length(T, u, Q_H)
-#     Q_H_star = Q_H(P
-#
-# def mon_length(T, u, Q_H):
-#     u_star =
-#     return rho_0*c_p*u_star**3*T/(k*g*Q_H)
+# Conversion from mm to m
+_mm_2_m = 1e-3
 
 EnergyBalance = collections.namedtuple('EnergyBalance', ('QH', 'QE',
     'Qrad', 'Qground', 'Qrain', 'Qmelt', 'QSW', 'QLW'))
 
 def stab_M(zeta):
+    """
+    Momentum stability function
+
+
+    Input zeta = z/L
+    """
     a = 1
     b = 2/3
     c = 5
@@ -49,38 +48,80 @@ def stab_M(zeta):
     return -(a*zeta + b*(zeta - c/d)*np.exp(-d*zeta) + b*c/d)
 
 def stab_H(zeta):
-    # a = 1
-    # b = 2/3
-    # c = 5
-    # d = 0.35
-    # return -((1+2*zeta/3)**(1.5) + b*(zeta - c/d)*np.exp(-d*zeta) + b*c/d - 1)
-    return 0
+    """
+    Sensible/latent heat stability function
+
+
+    Input zeta = z/L
+    """
+    a = 1
+    b = 2/3
+    c = 5
+    d = 0.35
+    return -((1+2*zeta/3)**(1.5) + b*(zeta - c/d)*np.exp(-d*zeta) + b*c/d - 1)
 
 
 
 def Q_H(P, u, T, xi):
+    """Sensible heat flux
+
+    Inputs:
+     * P: Pressure (Pa)
+     * u: Wind speed (m/s)
+     * T: 2m temperature (C)
+     * xi: Ratio z/L
+    """
     pref = c_p*rho_0*P*k**2/P_0
     denom = ( np.log(z/z_0) - stab_M(xi) ) * ( np.log(z/z_0T) - stab_H(xi) )
     return pref*u*(T - T_s)/denom
 
 def Q_E(u, e, e_s, xi):
+    """Latent heat flux
+
+    Inputs:
+     * u: Wind speed (m/s)
+     * e: 2m vapor pressure
+     * e_s: Surface vapor pressure
+     * xi: Ratio z/L
+    """
     pref = L_v*0.623*rho_0*k**2/P_0
     denom = ( np.log(z/z_0) - stab_M(xi) ) * ( np.log(z/z_0T) - stab_H(xi) )
     return pref*u*(e - e_s)/denom
 
 def u_fric(u, xi):
+    """Fricitonal velocity for wind speed u, ratio xi=z/L
+    """
     return k*u/(np.log(z/z_0) - stab_M(xi))
 
 def stab_length(Qh, uf, T):
+    """Stability length L for sensible heat Qh, frictional velocity uf,
+    and 2m temperature T
+    """
     return (rho_0*c_p*uf**3*(T+273.15))/(k*g*Qh)
 
 def sat_pressure(T):
+    """Saturation pressure (Pa) for temperature T (C)
+    """
     return 610.78*np.exp(17.08085*T/(234.15+T))
 
 def vap_pressure(T, RH):
+    """Vapor pressure (Pa) for temperature T(C), RH (%, 0<=RH<=100)
+    """
     return sat_pressure(T)*RH/100
 
 def iterate_stability(P, u, T, ez, es, tol=1e-6, max_iter=100):
+    """Iteratively solve equations for sensible heat flux, stability length,
+    and frictional velocity to calculate the stability-corrected sensible
+    heat flux.
+
+    Inputs:
+     * P: pressure (Pa)
+     * u: wind speed (m/s)
+     * T: Temperature (C)
+     * ez, es: 2m and surface vapor pressure
+     * tol: Tolerance required between consecutive guesses of Q_H
+     * max_iter: Maximum allowed iterations
+    """
     xi = 0
     qh = Q_H(P, u, T, xi)
     uf = u_fric(u, xi)
@@ -103,8 +144,28 @@ def iterate_stability(P, u, T, ez, es, tol=1e-6, max_iter=100):
     return (QH, QE)
 
 def energy_balance(T, rh, u, P, SWin, SWout, LWnet, rain):
+    """Calculate instantaneous energy balance.
+
+    Inputs:
+     * T: 2m temperature (C)
+     * rh: 2m relative humidity (%, 0<=RH<=100)
+     * u: 2m wind speed (m/s)
+     * SWin: Incoming SW radiation
+     * SWout: Outgoing SW radiation
+     * LWnet: Net longwave radiation
+     * rain: Total hourly precipitation (mm)
+
+    Inputs may be numeric or array-like with the same dimensions
+
+    Returns:
+     * Energy Balance instance: NamedTuple with fields
+        QH, QE, Qrad, Qground, Qrain, Qmelt, QSW, QLW
+
+    Each field in the output has the same size as the input variables
+    """
     _tol = 1e-6
     _max_iter = 100
+
     # RADIATION
     SWnet = SWin - SWout
     Q_rad = SWnet + LWnet
@@ -112,16 +173,16 @@ def energy_balance(T, rh, u, P, SWin, SWout, LWnet, rain):
     # RAIN
     Q_rain = rho_w*c_w*(rain/_hour*_mm_2_m)*(T - T_s)
     Q_rain[T<0] = 0
-    # Q_rain[T>=0] = 0
 
     # ASSUMPTION
     Q_ground = np.zeros(T.shape)
 
-    # Convert RH
-    # Saturation vapour pressure
+    # Convert RH to vapour pressure
     e_2m = vap_pressure(T, rh)
     e_s = vap_pressure(T_s, rh)
 
+    # This if-else block allows the function to be called with numeric
+    # or array-like forcing variables
     if hasattr(T, '__iter__'):
         QH = np.zeros(T.shape)
         QE = np.zeros(T.shape)

@@ -1,26 +1,21 @@
 # Assignment 1 - Glacier melt modelling
 Surface energy balance and temperature index modelling for South Glacier, summer 2008
 
-Python scripts are as follows:
+Code structure is:
 
- * explore_data.py: Plot raw timeseries and correct for SR50 resetting and other issues
- * hourly_average.py: Calculate hourly average of meteorological fields
+Modules:
 
-To do:
+ * `EBM.py`: Core code to solve the energy balance
+ * `hourly_daily_averages.py`: Tools for averaging 5- and 30-minute metorological data into hourly and daily bins for energy balance and temperature index models. Can be run as a script to calculate hourly and daily values of the cleaned input data (see `clean_input_data.py`')
 
-Modularize:
+Scripts:
 
- * Energy-balance model (mostly done)
- * All averaging functions (started)
+ * `clean_input_data.py`: Inspect raw AWS data and carry out required corrections (e.g. correcting for jump in height measurements corresponding to instrument reset) to prep the data for use in melt models
+ * `houly_daily_averages.py`: As a script, calculates the hourly and daily values of the cleaned input data
+ * `drive_ebm.py`: Calls the functions in `EBM.py` to calculate the energy balance from the hourly-averaged forcing data
+ * `albedo.py`: Calculate surface albedo (from ratio of outgoing and incoming SW radiation) and determine when the glacier is snow covered
+ * `drive_ti.py`: Calculate melt from height timeseries to calibrate a temperature-index model. Calculate TI-modelled melt.
 
-Clean scripts for:
+Plotting:
 
- * Data inspection/cleaning/averaging (all)
- * Main: Drive EBM, calibrate and run TI model
- * Plotting: Make all the plots
-    * Some modularization here, e.g. setting axes xticks, fonts, ...
-
-Clean python files:
-
- * `clean_input_data.py`: Explore AWS data and correct for data jumps (e.g. in SR50 data) before we use it in melt modelling
- * `hourly_daily_averages.py`
+ * `compare_timeseries.py`: Plot measured melt timeseries and both modelled timeseries
