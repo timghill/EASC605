@@ -103,6 +103,8 @@ if __name__ == '__main__':
     # If run as a script, calculates hourly and daily averages of AWS
     # Measurements
 
+    import plots
+
     # Time variables
     tt = np.load('data/clean/time.npy', allow_pickle=True)
     tt_30min = np.load('data/clean/time_30min.npy', allow_pickle=True)
@@ -163,45 +165,30 @@ if __name__ == '__main__':
 
     ax1.plot(tt_hourly, hourly_temp)
     ax1.set_ylabel('T ($^\\circ$C)')
-    ax1.grid()
-    ax1.text(0.015, 0.8, 'a', transform=ax1.transAxes)
 
     ax2.plot(tt_hourly, hourly_rh)
     ax2.set_ylabel('RH (%)')
-    ax2.grid()
-    ax2.text(0.015, 0.8, 'b', transform=ax2.transAxes)
-
 
     ax3.plot(tt_hourly, hourly_SWin)
     ax3.set_ylabel('SW$_{in}$')
-    ax3.grid()
-    ax3.text(0.015, 0.8, 'c', transform=ax3.transAxes)
-
 
     ax4.plot(tt_hourly, hourly_SWout)
     ax4.set_ylabel('SW$_{out}$')
-    ax4.grid()
-    ax4.text(0.015, 0.8, 'd', transform=ax4.transAxes)
 
     ax5.plot(tt_hourly, hourly_LWnet)
     ax5.set_ylabel('LW$_{net}$')
-    ax5.grid()
-    ax5.text(0.015, 0.8, 'e', transform=ax5.transAxes)
 
     ax6.plot(tt_hourly, hourly_press)
     ax6.set_ylabel('P (hPa)')
-    ax6.grid()
-    ax6.text(0.015, 0.8, 'f', transform=ax6.transAxes)
 
     ax7.plot(tt_hourly, hourly_rain)
-    ax7.text(0.015, 0.8, 'g', transform=ax7.transAxes)
-
     ax7.set_ylabel('Rain (mm)')
-    ax7.grid()
 
-    axes[-1].set_xlabel('Date')
-    axes[-1].xaxis.set_major_formatter(mdates.DateFormatter("%m-%d"))
-    axes[-1].set_xticks(xtick_loc)
+    ax7.set_xlabel('Date')
+    ax7 = plots.set_xticks(ax7)
+
+    for (i, ax) in enumerate(axes):
+        ax = plots.set_axes(ax, panel_label_index=i)
 
     plt.tight_layout()
 

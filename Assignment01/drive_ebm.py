@@ -85,8 +85,3 @@ melt = np.zeros(time.shape)
 for i in range(1, len(melt)):
     melt[i] = melt[i-1] + energy_balance.Qmelt[i-1]*dt/rhow/L_f
 np.save('data/hourly/ebm_melt.npy', melt)
-
-fig, ax = plt.subplots()
-ax.plot(time, melt)
-
-plt.show()
