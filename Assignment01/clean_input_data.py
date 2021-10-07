@@ -191,9 +191,6 @@ fig2.savefig('figures/SR50_correction.png', dpi=600)
 rad_corr_ind = corr_net_rad<-100
 corr_net_rad[rad_corr_ind] = 0
 
-print('Correcting for strongly negative net radiation:')
-print(tt[rad_corr_ind])
-
 # Correct for negative net SW radiation
 SW_corr_ind = (SWin - SWout)<0
 corr_SWout[SW_corr_ind] = corr_SWin[SW_corr_ind]

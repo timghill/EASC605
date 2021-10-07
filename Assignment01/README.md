@@ -1,7 +1,7 @@
 # Assignment 1 - Glacier melt modelling
 Surface energy balance and temperature index modelling for South Glacier, summer 2008
 
-Code structure is:
+The script `run.sh` runs all the python scripts in the correct order to carry out the complete experiment. For completeness, the individual modules and scripts are:
 
 Modules:
 

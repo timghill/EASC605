@@ -86,3 +86,4 @@ melt_TI = np.zeros(time.shape)
 melt_TI[1:] = DDF_lsq_snow*PDD_snow_series + DDF_lsq_ice*PDD_ice_series
 
 np.save('data/daily/ti_melt.npy', melt_TI)
+np.save('data/daily/melt.npy', tot_melt)
