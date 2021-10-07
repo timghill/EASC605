@@ -12,6 +12,8 @@ import matplotlib.dates as mdates
 
 import numpy as np
 
+import plots
+
 _max_albedo = 0.35
 
 height = np.load('data/daily/height.npy')
@@ -45,14 +47,12 @@ for i in range(n_snow_days-1):
 
 pc = PatchCollection(rectangles, facecolor='#bcbddc', alpha=0.5, edgecolor=None)
 ax.add_collection(pc)
-ax.grid()
 
 ax.set_xlabel('Date')
-ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d"))
+ax = plots.set_axes(ax)
+ax = plots.set_xticks(ax)
 min_month = 5
 max_month = 9
-xtick_loc = [dt.datetime(2008, mm, 1) for mm in range(min_month, max_month+1)]
-ax.set_xticks(xtick_loc)
 ax.set_ylabel('Albedo')
 ax.set_ylim([0, 1])
 

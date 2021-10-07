@@ -5,6 +5,7 @@ import matplotlib.dates as mdates
 import numpy as np
 
 import hourly_daily_averages
+import plots
 
 time = np.load('data/daily/time.npy', allow_pickle=True)
 sr50 = np.load('data/daily/melt.npy')
@@ -20,13 +21,8 @@ ax.plot(time, ti, label='TI')
 
 ax.set_xlabel('Date')
 ax.set_ylabel('Melt (m w.e.)')
-
-ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d"))
-min_month = 5
-max_month = 9
-xtick_loc = [datetime.datetime(2008, mm, 1) for mm in range(min_month, max_month+1)]
-ax.set_xticks(xtick_loc)
+ax = plots.set_axes(ax)
+ax = plots.set_xticks(ax)
 ax.legend()
-ax.grid()
 
 fig.savefig('figures/melt_comparison.png', dpi=600)

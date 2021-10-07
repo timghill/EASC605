@@ -22,6 +22,8 @@ from matplotlib import pyplot as plt
 import matplotlib.dates as mdates
 import datetime
 
+import plots
+
 # ------------------------------------------------------------------------
 # Read raw AWS data
 # ------------------------------------------------------------------------
@@ -88,53 +90,33 @@ fig, axes = plt.subplots(figsize=(8, 10), nrows=8, sharex=True)
 (ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8) = axes
 
 ax1.plot(tt, temp)
-# ax1 = set_axes(ax1)
-ax1.grid()
 ax1.set_ylabel('Temp ($^\\circ$C)')
-ax1.text(0.015, 0.8, 'a', transform=ax1.transAxes)
 
 ax2.plot(tt, wind_speed)
-ax2.grid()
 ax2.set_ylabel('U (m/s)')
-ax2.text(0.015, 0.8, 'b', transform=ax2.transAxes)
 
 ax3.plot(tt, RH)
-ax3.grid()
 ax3.set_ylabel('RH (%)')
-ax3.text(0.015, 0.8, 'c', transform=ax3.transAxes)
 
-# ax4.plot(dec_days, net_rad)
 ax4.plot(tt, net_rad)
-ax4.grid()
 ax4.set_ylabel('$Q_R$ (W/m$^2$)')
-ax4.text(0.015, 0.8, 'd', transform=ax4.transAxes)
 
 ax5.plot(tt, SWin - SWout)
-ax5.grid()
 ax5.set_ylabel('$Q_{SW}$ ((W/m$^2$)')
-ax5.text(0.015, 0.8, 'e', transform=ax5.transAxes)
 
 ax6.plot(tt_30min, SR50_dist)
-ax6.grid()
 ax6.set_ylabel('Height (m)')
-ax6.text(0.015, 0.8, 'f', transform=ax6.transAxes)
 
 ax7.plot(tt_30min, bar_press)
-ax7.grid()
 ax7.set_ylabel('Pressure (hPa)')
-ax7.text(0.015, 0.8, 'g', transform=ax7.transAxes)
 
 ax8.plot(tt_off_30min, rain_30min)
-ax8.grid()
 ax8.set_ylabel('Rain (mm)')
-ax8.text(0.015, 0.8, 'h', transform=ax8.transAxes)
 
-min_month = int(np.min(month))
-max_month = int(np.max(month))
-xtick_loc = [datetime.datetime(2008, mm, 1) for mm in range(min_month, max_month+1)]
-ax8.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d"))
-ax8.set_xticks(xtick_loc)
-ax8.set_xlabel('Date')
+for (i, ax) in enumerate(axes):
+    ax = plots.set_axes(ax, panel_label_index=i)
+
+ax8 = plots.set_xticks(ax8)
 
 plt.tight_layout()
 
@@ -178,11 +160,10 @@ ax2.plot(tt[reset_ind-100:reset_ind+100],
     SR50_dist[reset_ind-100:reset_ind+100], label='Raw SR50')
 ax2.plot(tt[reset_ind-100:reset_ind+100],
     corr_height[reset_ind-100:reset_ind+100], label='Corrected SR50')
-ax2.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d"))
 ax2.grid()
-ax2.legend()
 ax2.set_xlabel('Date')
 ax2.set_ylabel('Height (m)')
+ax2.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d"))
 
 plt.tight_layout()
 fig2.savefig('figures/SR50_correction.png', dpi=600)
@@ -199,15 +180,13 @@ corr_net_rad[SW_corr_ind] = 0
 # Plot the radiation correction
 fig, (ax1, ax2) = plt.subplots(nrows=2, sharex=True)
 ax1.plot(tt, net_rad)
-ax1.grid()
+ax1 = plots.set_axes(ax1, panel_label_index=0)
 ax1.set_ylabel('Raw $Q_R$ (W/m$^2$)')
-ax1.text(0.015, 0.85, 'a', transform=ax1.transAxes)
+
 ax2.plot(tt, corr_net_rad)
-ax2.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d"))
-ax2.grid()
 ax2.set_ylabel('Corr $Q_R$ (W/m$^2$)')
-ax2.text(0.015, 0.85, 'b', transform=ax2.transAxes)
-ax2.set_xticks(xtick_loc)
+ax2 = plots.set_axes(ax2, panel_label_index=1)
+ax2 = plots.set_xticks(ax2)
 ax2.set_xlabel('Date')
 
 plt.tight_layout()
@@ -215,15 +194,14 @@ fig.savefig('figures/radiation_correction.png', dpi=600)
 
 fig, (ax1, ax2) = plt.subplots(nrows=2, sharex=True)
 ax1.plot(tt, SWin - SWout)
-ax1.grid()
+ax1 = plots.set_axes(ax1, panel_label_index=0)
 ax1.set_ylabel('Raw $Q_{SW}$ (W/m$^2$)')
-ax1.text(0.015, 0.85, 'a', transform=ax1.transAxes)
 
 ax2.plot(tt, corr_SWin - corr_SWout)
 ax2.grid()
 ax2.set_ylabel('Corr $Q_{SW}$ (W/m$^2$)')
-ax2.text(0.015, 0.85, 'b', transform=ax2.transAxes)
-ax2.set_xticks(xtick_loc)
+ax2 = plots.set_axes(ax2, panel_label_index=1)
+ax2 = plots.set_xticks(ax2)
 ax2.set_xlabel('Date')
 
 plt.tight_layout()
@@ -271,51 +249,36 @@ fig, axes = plt.subplots(figsize=(8, 10), nrows=8, sharex=True)
 (ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8) = axes
 
 ax1.plot(tt, corr_temp)
-ax1.grid()
 ax1.set_ylabel('Temp ($^\\circ$C)')
-ax1.text(0.015, 0.8, 'a', transform=ax1.transAxes)
 
 ax2.plot(tt, corr_wind_speed)
-ax2.grid()
 ax2.set_ylabel('U (m/s)')
-ax2.text(0.015, 0.8, 'b', transform=ax2.transAxes)
 
 ax3.plot(tt, corr_RH)
-ax3.grid()
 ax3.set_ylabel('RH (%)')
-ax3.text(0.015, 0.8, 'c', transform=ax3.transAxes)
 
 # ax4.plot(dec_days, net_rad)
 ax4.plot(tt, corr_net_rad)
-ax4.grid()
 ax4.set_ylabel('$Q_R$ (W/m$^2$)')
-ax4.text(0.015, 0.8, 'd', transform=ax4.transAxes)
 
 ax5.plot(tt, corr_SWin - corr_SWout)
-ax5.grid()
 ax5.set_ylabel('$Q_{SW}$ ((W/m$^2$)')
-ax5.text(0.015, 0.8, 'e', transform=ax5.transAxes)
 
 ax6.plot(tt_30min, corr_height)
-ax6.grid()
 ax6.set_ylabel('Height (m)')
-ax6.text(0.015, 0.8, 'f', transform=ax6.transAxes)
 
 ax7.plot(tt_30min, corr_press)
-ax7.grid()
 ax7.set_ylabel('Pressure (hPa)')
-ax7.text(0.015, 0.8, 'g', transform=ax7.transAxes)
 
 ax8.plot(tt_off_30min, rain_30min)
-ax8.grid()
 ax8.set_ylabel('Rain (mm)')
-ax8.text(0.015, 0.8, 'h', transform=ax8.transAxes)
 
-min_month = int(np.min(month))
-max_month = int(np.max(month))
-xtick_loc = [datetime.datetime(2008, mm, 1) for mm in range(min_month, max_month+1)]
-ax8.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d"))
-ax8.set_xticks(xtick_loc)
+
+for (i, ax) in enumerate(axes):
+    ax = plots.set_axes(ax, panel_label_index=i)
+
+ax8 = plots.set_xticks(ax8)
+
 ax8.set_xlabel('Date')
 
 plt.tight_layout()
