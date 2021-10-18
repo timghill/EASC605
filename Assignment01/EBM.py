@@ -62,7 +62,7 @@ def stab_H(zeta):
 
 
 
-def Q_H(P, u, T, xi):
+def Q_H(P, u, T, xi, z_0=z_0, z_0T=z_0T):
     """Sensible heat flux
 
     Inputs:
@@ -72,10 +72,13 @@ def Q_H(P, u, T, xi):
      * xi: Ratio z/L
     """
     pref = c_p*rho_0*P*k**2/P_0
-    denom = ( np.log(z/z_0) - stab_M(xi) ) * ( np.log(z/z_0T) - stab_H(xi) )
+    if z_0 == 0:
+        denom = 1e12
+    else:
+        denom = ( np.log(z/z_0) - stab_M(xi) ) * ( np.log(z/z_0T) - stab_H(xi) )
     return pref*u*(T - T_s)/denom
 
-def Q_E(u, e, e_s, xi):
+def Q_E(u, e, e_s, xi, z_0=z_0, z_0T=z_0T):
     """Latent heat flux
 
     Inputs:
@@ -85,7 +88,10 @@ def Q_E(u, e, e_s, xi):
      * xi: Ratio z/L
     """
     pref = L_v*0.623*rho_0*k**2/P_0
-    denom = ( np.log(z/z_0) - stab_M(xi) ) * ( np.log(z/z_0T) - stab_H(xi) )
+    if z_0 == 0:
+        denom = 1e12
+    else:
+        denom = ( np.log(z/z_0) - stab_M(xi) ) * ( np.log(z/z_0T) - stab_H(xi) )
     return pref*u*(e - e_s)/denom
 
 def u_fric(u, xi):
@@ -109,7 +115,7 @@ def vap_pressure(T, RH):
     """
     return sat_pressure(T)*RH/100
 
-def iterate_stability(P, u, T, ez, es, tol=1e-6, max_iter=100):
+def iterate_stability(P, u, T, ez, es, tol=1e-6, max_iter=100, z_0=z_0):
     """Iteratively solve equations for sensible heat flux, stability length,
     and frictional velocity to calculate the stability-corrected sensible
     heat flux.
@@ -123,27 +129,27 @@ def iterate_stability(P, u, T, ez, es, tol=1e-6, max_iter=100):
      * max_iter: Maximum allowed iterations
     """
     xi = 0
-    qh = Q_H(P, u, T, xi)
+    # print(z_0)
+    qh = Q_H(P, u, T, xi, z_0=z_0, z_0T=z_0/100)
     uf = u_fric(u, xi)
     err = 10*tol
     n_it = 0
     while err>tol and n_it<max_iter:
         xi = z/stab_length(qh, uf, T)
         uf = u_fric(u, xi)
-        Qnew = Q_H(P, u, T, xi)
+        Qnew = Q_H(P, u, T, xi, z_0=z_0, z_0T=z_0/100)
         err = np.abs(Qnew - qh)
         qh = Qnew
         n_it+=1
-
     if xi>0:
         QH = qh
-        QE = Q_E(u, ez, es, xi)
+        QE = Q_E(u, ez, es, xi, z_0=z_0, z_0T=z_0/100)
     else:
-        QH = Q_H(P, u, T, 0)
-        QE = Q_E(u, ez, es, 0)
+        QH = Q_H(P, u, T, 0, z_0=z_0, z_0T=z_0/100)
+        QE = Q_E(u, ez, es, 0, z_0=z_0, z_0T=z_0/100)
     return (QH, QE)
 
-def energy_balance(T, rh, u, P, SWin, SWout, LWnet, rain):
+def energy_balance(T, rh, u, P, SWin, SWout, LWnet, rain,  z_0=z_0):
     """Calculate instantaneous energy balance.
 
     Inputs:
@@ -188,11 +194,11 @@ def energy_balance(T, rh, u, P, SWin, SWout, LWnet, rain):
         QE = np.zeros(T.shape)
         for i in range(len(T)):
             qh, qe = iterate_stability(P[i], u[i], T[i], e_2m[i], e_s[i],
-                tol=_tol, max_iter=_max_iter)
+                tol=_tol, max_iter=_max_iter, z_0=z_0)
             QH[i] = qh
             QE[i] = qe
     else:
-        QH, QE = iterate_stability(P, u, T, e_2m, e_s, tol=_tol)
+        QH, QE = iterate_stability(P, u, T, e_2m, e_s, tol=_tol, z_0=z_0)
 
     Q_melt = QH + QE + Q_rad + Q_ground + Q_rain
     Q_melt[Q_melt<0] = 0

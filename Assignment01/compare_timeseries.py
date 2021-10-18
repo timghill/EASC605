@@ -26,3 +26,24 @@ ax = plots.set_xticks(ax)
 ax.legend()
 
 fig.savefig('figures/melt_comparison.png', dpi=600)
+
+# Define and calculate error statistics
+ebm_tot_err = ebm[-1] - sr50[-1]
+ti_tot_err = ti[-1] - sr50[-1]
+
+def rmse(x):
+    return np.sqrt(np.mean( (x-sr50)**2))
+
+ebm_rmse = rmse(ebm)
+ti_rmse = rmse(ti)
+print('REFERENCE MELT')
+print(sr50[-1])
+
+print('ERROR STATISTICS')
+print('\tEBM\tTI')
+print('Total error')
+print('\t %.4f\t%.4f' % (ebm_tot_err, ti_tot_err))
+print('Relative error')
+print('\t %.4f\t%.4f' % (ebm_tot_err/sr50[-1], ti_tot_err/sr50[-1]))
+print('RMSE Error')
+print('\t %.4f\t%.4f' % (ebm_rmse, ti_rmse))
