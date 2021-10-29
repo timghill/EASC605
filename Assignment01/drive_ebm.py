@@ -55,6 +55,9 @@ dt = 3600
 rhow = 1e3
 L_f = 3.34e5
 
+print('Mean QH:')
+print(np.mean(energy_balance.QH[energy_balance.QH>0]))
+
 # By component
 tot_QE = np.sum(dt*energy_balance.QE[energy_balance.Qmelt>0])
 tot_QH = np.sum(dt*energy_balance.QH[energy_balance.Qmelt>0])

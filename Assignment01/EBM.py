@@ -147,6 +147,7 @@ def iterate_stability(P, u, T, ez, es, tol=1e-6, max_iter=100, z_0=z_0):
     else:
         QH = Q_H(P, u, T, 0, z_0=z_0, z_0T=z_0/100)
         QE = Q_E(u, ez, es, 0, z_0=z_0, z_0T=z_0/100)
+    # print(z/xi)
     return (QH, QE)
 
 def energy_balance(T, rh, u, P, SWin, SWout, LWnet, rain,  z_0=z_0):
