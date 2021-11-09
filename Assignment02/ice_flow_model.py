@@ -3,9 +3,10 @@ One-dimensional ice flow model
 
 Explore time stepping: Explicit, implicit, adaptive
 """
-
+import time
 import numpy as np
 from matplotlib import pyplot as plt
+import scipy.optimize
 
 # CONSTANTS
 g = 9.81        # Gravity; m/s2
@@ -60,12 +61,13 @@ def rhs_1d(t, h, zb, dx, Gamma=Gamma, zELA=zELA,
     hprime = -(q_edge[1:] - q_edge[:-1])/dx + bdot
     return hprime
 
-def drive_ice_flow(tt, xc, h, zb, Gamma=Gamma, zELA=zELA, **kwargs):
+def drive_ice_flow(tt, xc, h, zb, Gamma=Gamma, zELA=zELA, method='odeRK', **kwargs):
     """
     Integrate ice-flow model forward in time for given time steps (tt) and
     initial ice depth h. Any arguments passed as keywords arguments are
     forwarded to rhs_1d function.
     """
+    tstart = time.time()
     t = tt[0]
     tend = tt[-1]
     dt = tt[1] - tt[0]
@@ -90,25 +92,46 @@ def drive_ice_flow(tt, xc, h, zb, Gamma=Gamma, zELA=zELA, **kwargs):
     a31 = 0
     a32 = 0.5
 
-    rhs_fun = lambda t, y: rhs_1d(t, y, zb, dx, Gamma=Gamma, zELA=zELA, **kwargs)
+    rhs_fun = lambda t, y: rhs_1d(t, y, zb, dx, Gamma=Gamma, zELA=zELA,**kwargs)
     while t<tend:
-        k1 = rhs_fun(t, h)
-        k2 = rhs_fun(t + c2*dt, h + dt*a21*k1)
-        k3 = rhs_fun(t + c3*dt, h + dt*a31*k1 + dt*a32*k2)
-        k4 = rhs_fun(t + c4*dt, h + dt*k3)
+        h_old = h
+        if method=='odeRK':
+            # k1 = rhs_fun(t, h)
+            # k2 = rhs_fun(t + c2*dt, h + dt*a21*k1)
+            k3 = rhs_fun(t + c3*dt, h + dt*a31*k1 + dt*a32*k2)
+            k4 = rhs_fun(t + c4*dt, h + dt*k3)
 
-        dhdt = b1*k1 + b2*k2 + b3*k3 + b4*k4
-        subset = h + dhdt<0
-        dhdt[subset] = -h[subset]/dt
+            dhdt = b1*k1 + b2*k2 + b3*k3 + b4*k4
+            subset = h + dhdt<0
+            dhdt[subset] = -h[subset]/dt
+            h_new = h + dt*dhdt
 
-        h = h + dt*dhdt
+        elif method=='BE':
+            # Implicit method
+            # Define function g which we will find the root of
+            # h_new = scipy.optimize.brentq(g, h, maxiter=100)
+            g = lambda z: z - h - dt*rhs_fun(t, z)
+            h_new = scipy.optimize.newton(g, h, tol=1e-6)
+            # dhdt = rhs_fun(t, h_new)
+            h_new[h_new<0] = 0
+
+        elif method=='CN':
+            g = lambda z: z - h - 0.5*dt*(rhs_fun(t, z) + rhs_fun(t, h))
+            h_new = scipy.optimize.newton(g, h, tol=1e-6)
+            h_new[h_new<0] = 0
+
+
+        elif method=='CN':
+            pass
+        h = h_new
         H[i, :] = h
         i+=1
         t+=dt
 
-    # Print some information about convergence: Maximum depth change over
-    # one year
+    dhdt = (h_new - h_old)/dt
     print('Maximum dh/dt (m/year):')
-    print(np.max(np.abs(dhdt))*86400*265)
-
+    print(np.max(np.abs(dhdt))*86400*365)
+    tend = time.time()
+    dtime = tend - tstart
+    print('Elapsed time: ', dtime)
     return H
