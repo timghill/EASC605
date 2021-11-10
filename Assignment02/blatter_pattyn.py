@@ -18,34 +18,49 @@ A = 2.4e-24
 # B = 1/A
 # B = A**(-1/n)
 B = (1/A)**(1/n)
-print('Flow parameter:', B)
+print('Flow parameter: %.3e' % B)
 
 # PHYSICAL DOMAIN
 L = 50e3
+H = 500
+
 N = 25
 nz = 10
+
 dx = L/N
-dz = 1/nz
+dz = H/nz
+dzeta = 1/nz
+
 x = np.arange(0, L, dx)
-z = np.arange(0, 1, dz)
 
-[xm, zm] = np.meshgrid(x, z)
-# zb = np.zeros(N)
+# IMPOSED GEOMETRY
 zb = 250 - 0.05*x
-
-# SIMPLIFICATION!! NEWTONION FLUID
-visco = 1e12*np.diag(np.ones(N*nz))    # Pa.s
-
-# INITIAL CONDITIONS
-# zs = 750 - 250*np.cos(2*np.pi*x/L)
-# zs = 750 - (250/L)*x
-zs = zb + 500
-# print(zs)
-# dSdx = 250*2*np.pi/L*np.sin(2*np.pi*x/L)
-dSdx = -0.05 * np.ones(x.shape)
+zs = zb + H
+dSdx = -0.05*np.ones(x.shape)
 h = zs - zb
 
-# N = 5
+h_diag = np.diagflat(np.tile(h, (nz, 1)).flatten())
+inv_h_diag = np.diagflat(np.tile(1/h, (nz, 1)).flatten())
+
+
+zeta = np.arange(0, 1, dzeta)
+
+[xm, zetam] = np.meshgrid(x, zeta)
+
+zm = zs - h*zetam
+
+# z = np.arange(0, H, dz)
+
+# [xm, zm] = np.meshgrid(x, z)
+# zm
+
+# CHANGE OF COORDINATES
+# zeta = (zs - zm)/h
+# dzeta = 1/nz
+
+print(zeta)
+
+# FD OPERATORS
 Dx = np.diag(np.ones(N*nz)) - np.diag(np.ones(N*nz - 1), k=-1)
 for i in range(nz):
     Dx[i*N] = Dx[i*N+1]
@@ -53,10 +68,9 @@ Dx *= 1/dx
 
 Dz_outer = -np.diag(np.ones(N*nz)) + np.diag(np.ones(N*nz - N), k=N)
 Dz_inner = (np.diag(np.ones(N*nz)) - np.diag(np.ones(N*nz - N), k=-N))
-Dz_outer *= 1/dz/500
-Dz_inner *= 1/dz/500
+Dz_outer *= 1/dz
+Dz_inner *= 1/dz
 
-Dz = Dz_outer
 
 dHdx_pad = np.zeros((nz, N))
 
@@ -66,25 +80,27 @@ h_diag = np.diag(h_pad.flatten())
 a_x = 1/h_pad*(dSdx_pad - zm*dHdx_pad)
 Ax = np.diag(a_x.flatten())
 
-inv_h_diag = np.diag((1/h_pad).flatten())
+
+# Dzeta = -np.matmul(inv_h_diag, Dz_inner)
+Dzeta = -np.matmul(inv_h_diag, Dz_inner)*dz/dzeta
+# Dxp = Dx + np.matmul(Ax, Dz)
+Dxp = Dx
+
 
 def calc_D_operator(visco):
-    Dx_zeta = Dx
-    Dz_zeta = Dz_outer
-
-    D = (4*np.matmul(Dx_zeta, np.matmul(visco, Dx_zeta)) +
-            np.matmul(Dz_zeta, np.matmul(visco, Dz_outer)))
+    # Dx_zeta = Dx
+    # Dz_zeta = Dz_outer
+    D = (4*np.matmul(Dxp, np.matmul(visco, Dxp)) +
+            np.matmul(Dzeta, np.matmul(visco, Dzeta)))
     return D
 
 def calc_visco(u):
     dudx = np.matmul(Dx, u)
-    dudz = np.matmul(Dz_outer, u)
+    dudz = np.matmul(Dzeta, u)
     eps_eff = np.sqrt( 0.25*(dudx)**2 + 0.5*(dudz)**2)
     visco = 0.5*B*eps_eff**( (1-n)/n)
     return np.diagflat(visco)
 
-
-Dx_zeta = Dx + np.matmul(Ax, Dz)
 zs_pad = np.tile(zs, (nz, 1))
 dSdx = np.matmul(Dx, np.vstack(zs_pad.flatten()))
 Y = rho*g*np.vstack(dSdx)
@@ -121,19 +137,30 @@ visco = calc_visco(u)
 visco_arr = np.diag(visco).reshape((nz, N))
 
 u = u - np.min(u)
+hm = zm - zb - dz
 fig, ax = plt.subplots()
-pc = ax.pcolor(np.log10(visco_arr), cmap=cmocean.cm.turbid)
+pc = ax.pcolor(xm, hm, np.log10(visco_arr), cmap=cmocean.cm.turbid)
 ax.set_title('log_10 viscosity')
+ax.set_ylabel('z (m)')
+ax.set_xlabel('x')
 fig.colorbar(pc)
 
 fig, ax = plt.subplots()
 u_mat = u.reshape((nz, N))
-pc = ax.pcolor(u_mat*356*86400)
+pc = ax.pcolor(xm, zetam, u_mat*356*86400)
 ax.set_title('Velocity (m/a)')
+ax.set_ylabel('z (m)')
+ax.set_xlabel('x (m)')
 fig.colorbar(pc)
 
 fig, ax = plt.subplots()
-ax.plot(u_mat[:, 5]*365*86400, z)
+pc = ax.pcolor(xm, hm, u_mat*365*86400)
+ax.set_title('Velocity (m/a)')
+ax.set_ylabel('z (m)')
+ax.set_ylabel('x (m)')
+fig.colorbar(pc)
 
+fig, ax = plt.subplots()
+ax.plot(u_mat[:, 5]*365*86400, hm[:, 5])
 
 plt.show()
