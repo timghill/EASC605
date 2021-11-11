@@ -154,203 +154,215 @@ def solve_velocity(xm, zetam, h, zs):
     return (u, visco)
 
 if __name__ == '__main__':
+    slab = True
+    valley = True
 
-    """
-    CASE: SLAB GLACIER + SENSITIVITY TESTS
-    """
+    if slab:
+        """
+        CASE: SLAB GLACIER + SENSITIVITY TESTS
+        """
 
-    # PHYSICAL DOMAIN
-    L = 50e3
-    H = 500
+        # PHYSICAL DOMAIN
+        L = 50e3
+        H = 500
 
-    N = 2
-    nz = 20
+        N = 2
+        nz = 20
 
-    N = 2
-    nz = 50
+        N = 2
+        nz = 50
 
-    dx = L/N
-    dz = H/nz
-    dzeta = 1/nz
+        dx = L/N
+        dz = H/nz
+        dzeta = 1/nz
 
-    x = np.arange(0, L, dx)
+        x = np.arange(0, L, dx)
 
-    # IMPOSED GEOMETRY
-    zb = 250 - 0.05*x
-    zs = zb + H
-    # dSdx = -0.05*np.ones(x.shape)
-    h = zs - zb
-    zeta = np.arange(dzeta, 1+dzeta, dzeta)
+        # IMPOSED GEOMETRY
+        zb = 250 - 0.05*x
+        zs = zb + H
+        # dSdx = -0.05*np.ones(x.shape)
+        h = zs - zb
+        zeta = np.arange(dzeta, 1+dzeta, dzeta)
 
-    [xm, zetam] = np.meshgrid(x, zeta)
-    zm = zs - h*zetam
+        [xm, zetam] = np.meshgrid(x, zeta)
+        zm = zs - h*zetam
 
-    u, visco = solve_velocity(xm, zetam, h, zs)
-    visco_arr = np.diag(visco).reshape((nz, N))
+        u, visco = solve_velocity(xm, zetam, h, zs)
+        visco_arr = np.diag(visco).reshape((nz, N))
 
-    # u = u - np.min(u)
-    hm = zm - zb
-    fig, ax = plt.subplots()
-    pc = ax.pcolor(xm, hm, np.log10(visco_arr), cmap=cmocean.cm.turbid)
-    ax.set_title('log_10 viscosity')
-    ax.set_ylabel('z (m)')
-    ax.set_xlabel('x')
-    fig.colorbar(pc)
+        # u = u - np.min(u)
+        hm = zm - zb
+        fig, ax = plt.subplots()
+        pc = ax.pcolor(xm, hm, np.log10(visco_arr), cmap=cmocean.cm.turbid)
+        ax.set_title('log_10 viscosity')
+        ax.set_ylabel('z (m)')
+        ax.set_xlabel('x')
+        fig.colorbar(pc)
 
-    fig, ax = plt.subplots()
-    u_mat = u.reshape((nz, N))
-    pc = ax.pcolor(xm, zetam, u_mat*356*86400)
-    ax.set_title('Velocity (m/a)')
-    ax.set_ylabel('z (m)')
-    ax.set_xlabel('x (m)')
-    fig.colorbar(pc)
+        fig, ax = plt.subplots()
+        u_mat = u.reshape((nz, N))
+        pc = ax.pcolor(xm, zetam, u_mat*356*86400)
+        ax.set_title('Velocity (m/a)')
+        ax.set_ylabel('z (m)')
+        ax.set_xlabel('x (m)')
+        fig.colorbar(pc)
 
-    fig, ax = plt.subplots()
-    pc = ax.pcolor(xm, hm, u_mat*365*86400)
-    ax.set_title('Velocity (m/a)')
-    ax.set_ylabel('z (m)')
-    ax.set_ylabel('x (m)')
-    fig.colorbar(pc)
+        fig, ax = plt.subplots()
+        pc = ax.pcolor(xm, hm, u_mat*365*86400)
+        ax.set_title('Velocity (m/a)')
+        ax.set_ylabel('z (m)')
+        ax.set_ylabel('x (m)')
+        fig.colorbar(pc)
 
-    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(figsize=(8, 6), ncols=2, nrows=2)
-    pc = ax1.pcolor(xm, hm, u_mat*365*86400, cmap=cmocean.cm.speed)
-    ax1.set_title('Velocity (m/a)')
-    ax1.set_ylabel('z (m)')
-    ax1.set_xlabel('x (m)')
-    fig.colorbar(pc, ax=ax1)
-    ax1.text(-0.1, 1.1, 'a', transform=ax1.transAxes, fontsize=14)
+        fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(figsize=(8, 6), ncols=2, nrows=2)
+        pc = ax1.pcolor(xm, hm, u_mat*365*86400, cmap=cmocean.cm.speed)
+        ax1.set_title('Velocity (m/a)')
+        ax1.set_ylabel('z (m)')
+        ax1.set_xlabel('x (m)')
+        fig.colorbar(pc, ax=ax1)
+        ax1.text(-0.1, 1.1, 'a', transform=ax1.transAxes, fontsize=14)
 
-    pc = ax2.pcolor(xm, hm, np.log10(visco_arr), cmap=cmocean.cm.turbid)
-    ax2.set_title('Viscosity (Pa s)')
-    ax2.set_xlabel('x (m)')
-    fig.colorbar(pc, ax=ax2)
-    ax2.text(-0.1, 1.1, 'b', transform=ax2.transAxes, fontsize=14)
+        pc = ax2.pcolor(xm, hm, np.log10(visco_arr), cmap=cmocean.cm.turbid)
+        ax2.set_title('Viscosity (Pa s)')
+        ax2.set_xlabel('x (m)')
+        fig.colorbar(pc, ax=ax2)
+        ax2.text(-0.1, 1.1, 'b', transform=ax2.transAxes, fontsize=14)
 
-    ax3.plot(u_mat[:, 1]*365*86400, hm[:, 1])
-    ax3.set_xlabel('u (m/s)')
-    ax3.set_ylabel('z (m)')
-    ax3.text(-0.1, 1.1, 'c', transform=ax3.transAxes, fontsize=14)
-    ax3.grid()
+        ax3.plot(u_mat[:, 1]*365*86400, hm[:, 1])
+        ax3.set_xlabel('u (m/s)')
+        ax3.set_ylabel('z (m)')
+        ax3.text(-0.1, 1.1, 'c', transform=ax3.transAxes, fontsize=14)
+        ax3.grid()
 
-    ax4.plot(np.log10(visco_arr[:, 1]), hm[:, 1])
-    ax4.set_xlabel('log$_{10}\\eta$')
-    ax4.set_ylabel('z (m)')
-    ax4.text(-0.1, 1.1, 'd', transform=ax4.transAxes, fontsize=14)
-    ax4.grid()
+        ax4.plot(np.log10(visco_arr[:, 1]), hm[:, 1])
+        ax4.set_xlabel('log$_{10}\\eta$')
+        ax4.set_ylabel('z (m)')
+        ax4.text(-0.1, 1.1, 'd', transform=ax4.transAxes, fontsize=14)
+        ax4.grid()
 
-    print(visco_arr[:, 1])
+        print(visco_arr[:, 1])
 
-    plt.tight_layout()
+        plt.tight_layout()
 
-    # fig.savefig('blatter_slab.png', dpi=600)
+        fig.savefig('blatter_slab.png', dpi=600)
 
-    plt.show()
+        plt.show()
 
-    L = 50e3
-    H = 500
+        L = 50e3
+        H = 500
 
-    N = 2
-    nz = 100
+        N = 2
+        nz = 100
 
-    dx = L/N
-    dz = H/nz
-    dzeta = 1/nz
+        dx = L/N
+        dz = H/nz
+        dzeta = 1/nz
 
-    x = np.arange(0, L, dx)
+        x = np.arange(0, L, dx)
 
-    # IMPOSED GEOMETRY
-    zb = 250 - 0.05*x
-    zs = zb + H
-    dSdx = -0.05*np.ones(x.shape)
-    h = zs - zb
-    zeta = np.arange(0, 1, dzeta)
+        # IMPOSED GEOMETRY
+        zb = 250 - 0.05*x
+        zs = zb + H
+        dSdx = -0.05*np.ones(x.shape)
+        h = zs - zb
+        zeta = np.arange(0, 1, dzeta)
 
-    [xm, zetam] = np.meshgrid(x, zeta)
-    zm = zs - h*zetam
-    # hm2 = zm - zb - dz￼
+        [xm, zetam] = np.meshgrid(x, zeta)
+        zm = zs - h*zetam
+        # hm2 = zm - zb - dz￼
 
-    hm2 = zm - zb
+        hm2 = zm - zb
 
-    u_hr, visco_hr = solve_velocity(xm, zetam, h, zs)
+        u_hr, visco_hr = solve_velocity(xm, zetam, h, zs)
 
-    fig, ax = plt.subplots()
-    pc = ax.pcolor(xm, zetam, u_hr.reshape((nz, N)))
-    fig.colorbar(pc)
-    ax.set_title('Raw zeta velocity')
+        fig, ax = plt.subplots()
+        pc = ax.pcolor(xm, zetam, u_hr.reshape((nz, N)))
+        fig.colorbar(pc)
+        ax.set_title('Raw zeta velocity')
 
-    # print(np.min(u_hr))
-    # u_hr = u_hr - np.min(u_hr)
-    u_mat2 = u_hr.reshape((nz, N))
+        # print(np.min(u_hr))
+        # u_hr = u_hr - np.min(u_hr)
+        u_mat2 = u_hr.reshape((nz, N))
 
-    fig, ax = plt.subplots()
-    ax.plot(u_mat[:, 1]*365*86400, hm[:, 1], label='$\\Delta z = 10 \\mathrm{m}$')
-    ax.plot(u_mat2[:, 1]*365*86400, hm2[:, 1], label='$\\Delta z = 2 \\mathrm{m}$')
+        fig, ax = plt.subplots()
+        ax.plot(u_mat[:, 1]*365*86400, hm[:, 1], label='$\\Delta z = 10 \\mathrm{m}$')
+        ax.plot(u_mat2[:, 1]*365*86400, hm2[:, 1], label='$\\Delta z = 2 \\mathrm{m}$')
 
-    u_theory = 2*A*(rho*g)**n/(n+1) * (H**(n+1) - (H - hm[:, 1])**(n+1)) * (0.05)**n
-    ax.plot(u_theory*365*86400, hm[:, 1], label='Exact')
+        u_theory = 2*A*(rho*g)**n/(n+1) * (H**(n+1) - (H - hm[:, 1])**(n+1)) * (0.05)**n
+        ax.plot(u_theory*365*86400, hm[:, 1], label='Exact')
 
-    print(u_mat[0, 1]/u_theory[0])
-    print(u_mat2[0, 1]/u_theory[0])
+        print(u_mat[0, 1]/u_theory[0])
+        print(u_mat2[0, 1]/u_theory[0])
 
-    ax.legend()
-    ax.set_xlabel('u (m/a)')
-    ax.set_ylabel('z (m)')
-    ax.grid()
+        ax.legend()
+        ax.set_xlabel('u (m/a)')
+        ax.set_ylabel('z (m)')
+        ax.grid()
 
-    fig.savefig('blatter_slab_profile.png', dpi=600)
+        fig.savefig('blatter_slab_profile.png', dpi=600)
 
-    plt.show()
+        plt.show()
 
+    if valley:
 
+        """
+        CASE: VALLEY GLACIER
+        """
 
-    """
-    CASE: VALLEY GLACIER
-    """
-    """
-    L = 10e3
-    N = 40
-    nz = 20
+        L = 10e3
+        N = 25
+        nz = 20
 
-    dx = L/N
-    x = np.arange(0, L, dx)
+        dx = L/N
+        x = np.arange(0, L, dx)
 
-    dzeta = 1/nz
-    zeta = np.arange(0, 1, dzeta)
+        dzeta = 1/nz
+        zeta = np.arange(0, 1, dzeta)
 
-    xm, zetam = np.meshgrid(x, zeta)
+        xm, zetam = np.meshgrid(x, zeta)
 
-    zb = 1500 + 750*(x-7.5e3)*(x-5e3)/(7.5e3*5e3)
-    zs = 2300 - 0.05*x
+        zb = 1500 + 750*(x-7.5e3)*(x-5e3)/(7.5e3*5e3)
+        zs = 2300 - 0.05*x
 
-    h = zs - zb
-    zm = zs - h*zetam
+        h = zs - zb
+        zm = zs - h*zetam
 
-    fig, ax = plt.subplots()
-    ax.plot(x, zb, 'k')
-    ax.plot(x, zs)
+        u, visco = solve_velocity(xm, zetam, h, zs)
 
-    u, visco = solve_velocity(xm, zetam, h, zs)
+        u_mat = u.reshape((nz, N))
+        _year = 365*86400
+        fig, ax = plt.subplots()
+        pc = ax.pcolor(xm, zetam, u_mat*_year, cmap=cmocean.cm.speed)
+        fig.colorbar(pc)
 
-    u_mat = u.reshape((nz, N))
-    _year = 365*86400
-    fig, ax = plt.subplots()
-    pc = ax.pcolor(xm, zetam, u_mat*_year, cmap=cmocean.cm.speed)
-    fig.colorbar(pc)
+        fig, (ax, ax2) = plt.subplots(figsize=(8, 4), ncols=2)
+        pc = ax.pcolor(xm/1e3, zm, u_mat*_year, cmap=cmocean.cm.speed)
+        cbar = fig.colorbar(pc, ax=ax)
+        cbar.set_label('Velocity (m/a)')
+        ax.set_xlabel('x (km)')
+        ax.set_ylabel('z (m)')
+        ax.text(-0.2, 1.1, 'a', transform=ax.transAxes, fontsize=14)
+        z_base = zm[-1, :]
+        z_lower = 1400*np.ones(z_base.shape)
+        # ax.plot(x/1e3, zm[-1, :], 'k')
+        ax.fill_between(x/1e3, z_lower, z_base, facecolor=0.5*np.ones(3))
 
-    fig, ax = plt.subplots()
-    pc = ax.pcolor(xm/1e3, zm, u_mat*_year, cmap=cmocean.cm.speed)
-    cbar = fig.colorbar(pc)
-    cbar.set_label('Velocity (m/a)')
-    ax.set_xlabel('x (km)')
-    ax.set_ylabel('z (m)')
-    z_base = zm[0, :]
-    z_lower = 1400*np.ones(z_base.shape)
-    # ax.plot(x/1e3, zm[-1, :], 'k')
-    # ax.fill_between(x/1e3, z_lower, z_base, facecolor=0.5*np.ones(3))
+        ax.set_ylim([1400, 2400])
 
-    ax.set_ylim([1400, 2400])
+        kk = 10
+        hm = zm - zb
+        H = h[kk]
+        # hi = hm[:, 20]
+        u_theory =  2*A*(rho*g)**n/(n+1) * (H**(n+1) - (H - hm[:, kk])**(n+1)) * (0.05)**n
+        ax2.plot(u_theory*_year, hm[:, kk], label='SIA')
+        ax2.plot(u_mat[:, kk]*_year, hm[:, kk], label='BP')
+        ax2.set_xlabel('u (m/a)')
+        ax2.set_ylabel('z - z$_b$(m)')
+        ax2.grid()
+        ax2.legend()
+        ax2.text(-0.2, 1.1, 'b', transform=ax2.transAxes, fontsize=14)
+        plt.tight_layout()
 
-    fig.savefig('blatter_valley.png', dpi=600)
-
-    plt.show()
-    """
+        fig.savefig('blatter_valley.png', dpi=600)
+        plt.show()
