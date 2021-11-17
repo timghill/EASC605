@@ -6,23 +6,32 @@ from ice_flow_model import drive_ice_flow
 # DOMAIN
 L = 35e3        # Domain length (m)
 N = 100         # Number of grid centre points
-dx = L/N
+dx = L/N        # Grid resolution (350 m)
 
-xc = np.arange(dx/2, L+dx/2, dx)    # Cell centre coordinates
-xe = np.arange(0, L+dx, dx)         # Cell edge coordinates
-b0 = 1800
-zb = b0 - 0.05*xc
-t0 = 0
-tend = 1e3*360*86400
-dt = 100*86400
+xc = np.arange(dx/2, L+dx/2, dx)    # Cell centre coordinates (175, 525, ... )
+xe = np.arange(0, L+dx, dx)         # Cell edge coordinates (0, 350, ... )
+b0 = 1800                           # Highest bed elevation (m)
+bed_slope = 0.05                    # Bed slope (m/m)
+zb = b0 - bed_slope*xc              # Bed elevation (m)
+zELA = 1400                         # ELA elevation (m)
+Gamma = 0.007/(365*86400)           # Mass balance gradient (s-1)
 
-# Initial conditions - the model is robust enough we can be completely
-# naive about the initial state
-h0 = np.zeros(xc.shape)
-h0[:95] = 50
+# TIME STEPPING
+t0 = 0                              # Initial time (0)
+tend = 1e3*365*86400                # End time: integrate for 1000 years to reach steady state
+dt = 5*86400                        # Timestep = 5 days
+
+# Initial conditions - the model is robust enough we can be naive about
+# the initial state and let it grow from almost nothing
+h0 = 50*np.ones(xc.shape)           # Uniform 50 m thickness
+
+# Zero thickness near domain edge so that no-flow BCs make sense - this is
+# not strictly necessary
+h0[(N-5):] = 0
 
 tt = np.arange(t0, tend+dt, dt)
-H2 = drive_ice_flow(tt, xc, h0, zb, zELA=1400, method='BE')
+
+H2 = drive_ice_flow(tt, xc, h0, zb, zELA=zELA, Gamma=Gamma, method='odeFE')
 
 fig2, (ax2, ax3) = plt.subplots(ncols=2, figsize=(8, 4))
 ax2.plot(xc/1e3, zb, color=0.5*np.ones(3))
@@ -40,6 +49,8 @@ ax3.text(-0.075, 1.05, 'b', transform=ax3.transAxes, fontsize=14)
 ax3.grid()
 
 plt.tight_layout()
+
+"""
 fig2.savefig('valley_slope.png', dpi=600)
 
 print(np.max(H2[-1]))
@@ -77,5 +88,5 @@ print(volumes_gamma/volumes_gamma[2])
 
 
 fig.savefig('valley_sensitivity.png', dpi=600)
-
+"""
 plt.show()
