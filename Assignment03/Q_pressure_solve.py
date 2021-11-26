@@ -25,7 +25,9 @@ N = 100
 dx = (L/N)
 x = np.arange(0, L, dx)
 
-dt = 60
+dt = 86400
+t = 0
+tend = 5*86400
 
 bed_slope = 0
 zb = 100 - bed_slope*x
@@ -39,7 +41,6 @@ p_i = rhow*g*(zs - zb)
 
 # FORCING
 Q0 = 10
-
 
 def ds_upwind(x, ghost_value=0):
     dxds = np.zeros(x.shape)
@@ -70,36 +71,53 @@ S = 2 + 2*x/L
 
 # Potential gradient is simply pressure gradient
 dpwds = ds_downwind(pw)
-dphids = dpwds
+# dphids = dpwds
 
 # Iterate to find a consistent solution for flux Q and cross sectional
 # area, given an imposed pressure gradient
-itnum = 0
 maxiter = 50
-err = 1e3
-tol = 1e-12
+tol = 0.1
+S_tol = 5e-4/3600
 
-# while err>tol and itnum<maxiter:
-for i in range(5):
+t = 0
+# while t<tend:
+S_err = 1
+while S_err > S_tol:
+    err = 1e3
+    itnum = 0
+    while err>tol and itnum<maxiter:
+    # for i in range(5):
 
-    # Solve for discharge Q
-    D = D_upwind + (1/rhoi - 1/rhow)/Lf*(gamma - 1)*np.diag(dpwds)
-    y = np.vstack(2*S*A*( (p_i - pw)/n)**n)
-    y[0] = y[0] + Q0/dx # Boundary condition on Q[0]
+        # Solve for discharge Q
+        D = D_upwind + (1/rhoi - 1/rhow)/Lf*(gamma - 1)*np.diag(dpwds)
+        y = np.vstack(2*S*A*( (p_i - pw)/n)**n)
+        y[0] = y[0] + Q0/dx # Boundary condition on Q[0]
 
-    Q = np.linalg.solve(D, y).flatten()
+        Q = np.linalg.solve(D, y).flatten()
 
-    # Now calculate pressure gradient - note the negative sign!
-    dpwds = -Q**2*np.sqrt(np.pi)*fR*rhow/(S**5/2)
+        # Now calculate pressure gradient - note the negative sign!
+        dpwds = -Q**2*np.sqrt(np.pi)*fR*rhow/(S**5/2)
 
-    # Integrate to calculate pressure
-    yp = np.vstack(dpwds)
-    p_new = np.linalg.solve(D_downwind, yp).flatten()
-    print(np.max(np.abs(pw - p_new))/np.max(p_i))
-    pw = p_new
+        # Integrate to calculate pressure
+        yp = np.vstack(dpwds)
+        p_new = np.linalg.solve(D_downwind, yp).flatten()
 
-mi = Q/Lf*(gamma-1)*dpwds
-dSdt = mi/rhow - 2*S*A*(p_i - pw)**n/n**n
+        err = np.max(np.abs(pw - p_new))
+        # print(np.max(np.abs(pw - p_new))/np.max(p_i))
+        pw = p_new
+        itnum += 1
+
+    # print('Converged after %d iterations' % itnum)
+
+    mi = Q/Lf*(gamma-1)*dpwds
+    dSdt = mi/rhow - 2*S*A*(p_i - pw)**n/n**n
+    S = S + dt*dSdt
+    t = t + dt
+
+    S_err = np.max(np.abs(dSdt))
+
+print('Converged after %f days' % (float(t)/86400))
+
 
 fig, ax = plt.subplots()
 ax.plot(x, p_new)
@@ -110,7 +128,7 @@ ax.plot(x, Q)
 ax.set_title('Discharge')
 
 fig, ax = plt.subplots()
-ax.plot(x, dSdt)
-ax.set_title('dS dt')
+ax.plot(x, S)
+ax.set_title('S')
 
 plt.show()
