@@ -29,6 +29,7 @@ def solve_incompressible(params):
     n = params['n']
     fR = params['fR']
 
+    N = params['N']
     # Finite-difference discretizations
 
     # Upwind derivatives - this enforces a BC on the left boundary
@@ -54,12 +55,17 @@ def solve_incompressible(params):
 
     t, t_end = params['t_span']
     dt = params['dt']
+    m = len(params['t_eval'])
+
+    S_out = np.zeros((N, m))
+    Q_out = np.zeros((N, m))
+    pw_out = np.zeros((N, m))
+    h_lake_out = np.zeros(m)
 
     t = 0
 
     Q_forcing_handle = params['Q_lake']
-    while t<t_end:
-    # for its in range(n_steps):
+    for tindex, t in enumerate(params['t_eval']):
         err = 1e3
         itnum = 0
 
@@ -95,7 +101,6 @@ def solve_incompressible(params):
         creep[creep<0] = 0
 
         dSdt = mi/rhow - creep
-        S = S + dt*dSdt
         t = t + dt
 
         h_lake = h_lake - dt*Q_lake/A_lake
@@ -104,7 +109,14 @@ def solve_incompressible(params):
 
         S_err = np.max(np.abs(dSdt))
 
-    return S, pw, Q, h_lake
+        S_out[:, tindex] = S
+        Q_out[:, tindex] = Q
+        pw_out[:, tindex] = pw
+        h_lake_out[tindex] = h_lake
+
+        S = S + dt*dSdt
+
+    return S_out, pw_out, Q_out, h_lake_out
 
 
 if __name__ == '__main__':
@@ -168,5 +180,8 @@ if __name__ == '__main__':
     S, pw, Q, h = solve_incompressible(params)
 
     fig, ax = plt.subplots()
-    ax.plot(x, S)
+    ax.plot(x, S[:, -1])
+
+    fig, ax = plt.subplots()
+    ax.plot(t_eval/86400, S[0])
     plt.show()

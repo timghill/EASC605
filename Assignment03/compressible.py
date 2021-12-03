@@ -202,7 +202,6 @@ if __name__ == '__main__':
     params['t_eval'] = t_eval
 
     h_lake = p_i[0]/rhow/g
-    print('Lake height:', h_lake)
     p_lake = rhow*g*h_lake
     A_lake = 500*500
 
