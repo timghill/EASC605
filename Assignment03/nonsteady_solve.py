@@ -5,155 +5,168 @@ Solve time-dependent R-channel equations
 import numpy as np
 from matplotlib import pyplot as plt
 
-# PARAMETERS
+# PHYSICAL CONSTANTS (can't change these values)
 rhoi = 917          # Density of ice (kg.m-3)
 rhow = 1000         # Density of water (kg.m-3)
 g = 9.81            # Gravitational acceleration (m.s-2)
 Lf = 3.34e5         # Latent heat of fusion (J.kg-1)
 cw = 4.217e3        # Heat capacity of water (J.kg-1.K-1
 ct = 7.5e-8         # Clausius-Clapeyron (pressure-melting) constant (K.Pa-1)
-A = 2.4e-24         # Flow law coefficient (Pa-3.s-1)
-n = 3               # Flow law exponent
-fR = 0.15           # Darcy-Weisbach friction coefficient
 gamma = ct*rhow*cw  # Derived coefficient in energy-balance equation
 
-# DOMAIN
-L = 10e3            # Domain length (m)
-N = 100             # Number of grid cells
-dx = (L/N)          # Derived grid spacing
-x = np.arange(0, L, dx)
+# PARAMETERS - can change these vaues
+default_params = dict(
+A = 2.4e-24,        # Flow law coefficient (Pa-3.s-1)
+n = 3,              # Flow law exponent
+fR = 0.15,          # Darcy-Weisbach friction coefficient
+)
 
-bed_slope = 0               # Bed slope (-)
-zb = 100 - bed_slope*x      # Bed elevation (m)
-# Compute suface elevation zs (m)
-zs_arg = L - x + 2*dx
-zs_arg[zs_arg<0] = 0
-zs = 600/np.sqrt(L)*np.sqrt(zs_arg)
-zs[zs<=zb] = zb[zs<=zb]
+def solve_incompressible(params):
+    """
+    Solve incompressible conduit equations with NO pressure coupling
+    """
+    A = params['A']
+    n = params['n']
+    fR = params['fR']
 
-p_i = rhow*g*(zs - zb)      # Overburden ice pressure (Pa)
+    # Finite-difference discretizations
 
-# Timestepping
-# dt = 3600
-dt = 3600
-t = 0
+    # Upwind derivatives - this enforces a BC on the left boundary
+    D_upwind = np.diag(np.ones(N)) - np.diag(np.ones(N-1), k=-1)
+    D_upwind = D_upwind/dx
 
-# FORCING
-Q0 = 10             # Imposed upstream flux from lake drainage
+    # Downwind derivatives - this enforces a BC on the right boundary
+    D_downwind = 1/dx*(-np.diag(np.ones(N)) + np.diag(np.ones(N-1), k=1))
 
-def ds_upwind(x, ghost_value=0):
-    dxds = np.zeros(x.shape)
-    dxds[1:] = (x[1:] - x[:-1])/dx
-    dxds[0] = (x[0] - ghost_value)/dx
-    return dxds
+    p_i = params['p_i']
 
-def ds_downwind(x, ghost_value=0):
-    dxds = np.zeros(x.shape)
-    dxds[:-1] = (x[1:] - x[:-1])/dx
-    dxds[-1] = (ghost_value - x[-1])/dx
-    return dxds
+    pw = params['init_pw']
+    dpwds = np.matmul(D_downwind, np.vstack(pw)).flatten()
 
-# Finite-difference discretizations
+    S = params['init_S']
 
-# Upwind derivatives - this enforces a BC on the left boundary
-D_upwind = np.diag(np.ones(N)) - np.diag(np.ones(N-1), k=-1)
-D_upwind = D_upwind/dx
+    maxiter = 50
+    tol = 0.1
+    S_tol = 1e-2/86400
 
-# Downwind derivatives - this enforces a BC on the right boundary
-D_downwind = 1/dx*(-np.diag(np.ones(N)) + np.diag(np.ones(N-1), k=1))
+    h_lake = params['init_h_lake']
+    A_lake = params['A_lake']
 
-# Initial pressure guess - needed in first iteration to solve for
-# first guess of discharge Q. This is not an initial condition but a "first
-# guess" in the iteration step
-pw_min = 0
-pw_max = p_i[0]
-pw = pw_max - pw_max*((x)/(L))**1
-dpwds = ds_downwind(pw)
+    t, t_end = params['t_span']
+    dt = params['dt']
 
-# INITIAL CONDITIONS
-S = 2 + 0*x/L   # True initial condition on channel cross-section
+    t = 0
 
-maxiter = 50
-tol = 0.1
-S_tol = 1e-2/86400
+    Q_forcing_handle = params['Q_lake']
+    while t<t_end:
+    # for its in range(n_steps):
+        err = 1e3
+        itnum = 0
 
-h_lake = 300
-A_lake = 250*250
+        Q_lake = Q_forcing_handle(t)
 
-t = 0
-S_err = 1
-iter = 0
-n_steps = int(5*86400/dt)
-# while S_err > S_tol:
-for its in range(n_steps):
-    err = 1e3
-    itnum = 0
-    # print('Lake level:', h_lake)
+        # Iterate to find a consistent solution for flux Q and cross sectional
+        # area, given an imposed pressure gradient
+        while err>tol and itnum<maxiter:
+        # for i in range(5):
+            # Solve for discharge Q
+            D = D_upwind + (1/rhoi - 1/rhow)/Lf*(gamma - 1)*np.diag(dpwds)
+            y = np.vstack(2*S*A*( (p_i - pw)/n)**n)
+            y[y<0] = 0
+            y[0] = y[0] + Q_lake/dx     # Boundary condition on Q[0]
 
-    # Q_lake = 1
-    Q_lake = np.exp(t/86400)
-    print('Discharge:', Q_lake)
-    print('Lake level:', h_lake)
-    if h_lake<=0:
-        Q_lake = 0
-    # print(Q_lake)
-    # print(h_lake)
+            Q = np.linalg.solve(D, y).flatten()
 
-    # Iterate to find a consistent solution for flux Q and cross sectional
-    # area, given an imposed pressure gradient
-    while err>tol and itnum<maxiter:
-    # for i in range(5):
-        # Solve for discharge Q
-        D = D_upwind + (1/rhoi - 1/rhow)/Lf*(gamma - 1)*np.diag(dpwds)
-        y = np.vstack(2*S*A*( (p_i - pw)/n)**n)
-        y[y<0] = 0
-        # print(y)
-        y[0] = y[0] + Q_lake/dx     # Boundary condition on Q[0]
+            # Now calculate pressure gradient - note the negative sign!
+            dpwds = -Q**2*np.sqrt(np.pi)*fR*rhow/(S**5/2)
 
-        Q = np.linalg.solve(D, y).flatten()
+            # Integrate to calculate pressure
+            yp = np.vstack(dpwds)
+            p_new = np.linalg.solve(D_downwind, yp).flatten()
 
-        # Now calculate pressure gradient - note the negative sign!
-        dpwds = -Q**2*np.sqrt(np.pi)*fR*rhow/(S**5/2)
+            err = np.max(np.abs(pw - p_new))
+            pw = p_new
+            itnum += 1
 
-        # Integrate to calculate pressure
-        yp = np.vstack(dpwds)
-        p_new = np.linalg.solve(D_downwind, yp).flatten()
+        mi = Q/Lf*(gamma-1)*dpwds
+        mi[mi<0] = 0
 
-        err = np.max(np.abs(pw - p_new))
-        pw = p_new
-        itnum += 1
+        creep = 2*S*A*(p_i-pw)**n / n**n
+        creep[creep<0] = 0
 
-    # print(pw)
+        dSdt = mi/rhow - creep
+        S = S + dt*dSdt
+        t = t + dt
 
-    mi = Q/Lf*(gamma-1)*dpwds
-    creep = 2*S*A*(p_i-pw)**n / n**n
-    creep[creep<0] = 0
-    dSdt = mi/rhow - creep
-    S = S + dt*dSdt
-    # S[S>50] = 50
-    t = t + dt
-    iter += 1
-    #
-    h_lake = h_lake - dt*Q_lake/A_lake
-    if h_lake<0:
-        h_lake = 0
+        h_lake = h_lake - dt*Q_lake/A_lake
+        if h_lake<0:
+            h_lake = 0
+
+        S_err = np.max(np.abs(dSdt))
+
+    return S, pw, Q, h_lake
 
 
-    S_err = np.max(np.abs(dSdt))
+if __name__ == '__main__':
+    # DOMAIN
+    L = 10e3            # Domain length (m)
+    N = 100             # Number of grid cells
+    dx = (L/N)          # Derived grid spacing
+    x = np.arange(0, L, dx)
 
-print('Converged after %f days' % (float(t)/86400))
+    bed_slope = 0               # Bed slope (-)
+    zb = 100 - bed_slope*x      # Bed elevation (m)
 
+    # Compute suface elevation zs (m)
+    zs_arg = L - x + 2*dx
+    zs_arg[zs_arg<0] = 0
+    zs = 600/np.sqrt(L)*np.sqrt(zs_arg)
+    zs[zs<=zb] = zb[zs<=zb]
+    p_i = rhow*g*(zs - zb)      # Overburden ice pressure (Pa)
 
-fig, ax = plt.subplots()
-ax.plot(x, p_new)
-ax.set_title('Pressure')
+    params = default_params.copy()
+    params['L'] = L
+    params['N'] = N
+    params['dx'] = dx
+    params['x'] = x
 
-fig, ax = plt.subplots()
-ax.plot(x, Q)
-ax.set_title('Discharge')
+    params['zb'] = zb
+    params['p_i'] = p_i
 
-fig, ax = plt.subplots()
-ax.plot(x, S)
-ax.set_title('S')
+    # Timestepping
+    dt = 3600
+    t = 0
+    t_end = 86400*2
+    t_span = (t, t_end)
+    t_eval = np.arange(t, t_end, dt)
 
-plt.show()
+    params['dt'] = dt
+    params['t_span'] = t_span
+    params['t_eval'] = t_eval
+
+    h_lake = p_i[0]/rhow/g
+    p_lake = rhow*g*h_lake
+    A_lake = 500*500
+
+    params['A_lake'] = A_lake
+    params['init_h_lake'] = h_lake
+
+    # PRESCRIBED LAKE DRAINAGE
+    params['Q_lake'] = lambda t: 10
+
+    # Initial pressure guess - needed in first iteration to solve for
+    # first guess of discharge Q. This is not an initial condition but a "first
+    # guess" in the iteration step
+    pw = p_i
+    params['init_pw'] = pw
+
+    # INITIAL CONDITIONS
+    S = 1 + 0*x/L   # True initial condition on channel cross-section
+
+    params['init_S'] = S
+
+    S, pw, Q, h = solve_incompressible(params)
+
+    fig, ax = plt.subplots()
+    ax.plot(x, S)
+    plt.show()
