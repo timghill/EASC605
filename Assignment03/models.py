@@ -114,7 +114,12 @@ def rhs_compressible_channel(t, v, params):
     # Compute time derivatives (area, pressure, and lake level)
     dSdt = mdot/rhoi - creep_closure
     dpwdt = -1/beta/S*(dSdt + dQds - mdot/rhow)
-    dhdt = -Q_lake/A_lake
+
+    if isinstance(A_lake, float):
+        A_i = A_lake
+    else:
+        A_i = A_lake(h)
+    dhdt = -Q_lake/A_i
 
     # Populate state vector
     vprime = np.zeros(2*N+1)
@@ -209,6 +214,7 @@ def solve_incompressible(params):
     S_tol = 1e-2/86400
 
     h_lake = params['init_h_lake']
+
     A_lake = params['A_lake']
 
     t, t_end = params['t_span']
@@ -291,7 +297,12 @@ def solve_incompressible(params):
         dSdt = mi/rhow - creep
         t = t + dt
 
-        h_lake = h_lake - dt*Q_lake/A_lake
+        if isinstance(A_lake, float):
+            A_i = A_lake
+        else:
+            A_i = A_lake(h_lake)
+
+        h_lake = h_lake - dt*Q_lake/A_i
         if h_lake<0:
             h_lake = 0
 
